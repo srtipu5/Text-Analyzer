@@ -1,7 +1,7 @@
 import bcrypt from 'bcrypt';
 import { save } from '../../../Database/Repository/UserRepository';
 import { log } from '../../../Util/Helper';
-import { UserRegisterParams } from '../../../Request/ReqParams';
+import { UserRegisterParams } from '../../../Type/Request';
 import { saveUser } from '../../../Action/User/SaveUser';
 
 jest.mock('bcrypt');

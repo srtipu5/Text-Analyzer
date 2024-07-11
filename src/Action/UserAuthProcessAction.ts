@@ -1,8 +1,10 @@
 import jwt from 'jsonwebtoken';
-import { AuthBodyParams } from '../../Request/Auth/AuthBodyParams';
-import { AuthResponse } from '../../Response/Auth/AuthResponse';
+import { AuthResponse } from "../Type/Response";
+import { UserAuthParams } from '../Type/Request';
 
-export const authenticate = (reqBody: AuthBodyParams): AuthResponse => {
+export class UserAuthProcessAction {
+    
+ async authenticate(reqBody: UserAuthParams): Promise<AuthResponse> {
   try {
     const jwtSecret = process.env.JWT_SECRET;
 
@@ -10,14 +12,14 @@ export const authenticate = (reqBody: AuthBodyParams): AuthResponse => {
       throw new Error("JWT_SECRET variable is not defined");
     }
 
-    const { username, password } = reqBody;
+    const { email, password } = reqBody;
 
     // In prod it will be handled by DB
-    if (username !== "testUsername" || password !== "testPassword") {
+    if (email !== "test@gmail.com" || password !== "testPassword") {
       return { success: false, errorCode: 401 };
     }
 
-    const user = { username, password };
+    const user = { email, password };
     const token = jwt.sign(user, jwtSecret, { expiresIn: "1h" });
 
     return { success: true, token };
@@ -26,3 +28,5 @@ export const authenticate = (reqBody: AuthBodyParams): AuthResponse => {
     return { success: false, errorCode: 500 };
   }
 };
+
+}

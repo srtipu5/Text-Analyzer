@@ -1,5 +1,5 @@
 
-import { deleteUser } from '../../../Action/User/DeleteUser';
+import { deleteUser } from '../../../Action/User/UserDelete';
 import { deleteById } from '../../../Database/Repository/UserRepository';
 import { log } from '../../../Util/Helper';
 

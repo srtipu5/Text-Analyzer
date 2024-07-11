@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken';
-import { AuthBodyParams } from '../../../Request/Auth/AuthBodyParams';
+import { AuthBodyParams } from '../../../Type/Auth/AuthBodyParams';
 import { authenticate } from '../../../Action/Auth/Authenticate';
-import { AuthResponse } from '../../../Response/Auth/AuthResponse';
+import { AuthResponse } from '../../../Type/Response';
 
 
 jest.mock('jsonwebtoken', () => ({

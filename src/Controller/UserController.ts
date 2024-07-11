@@ -1,15 +1,9 @@
 import Controller from "./Controller";
 import { NextFunction, Request, Response } from "express";
 import { log } from "../Util/Helper";
-import { UserRegisterParams, IdParams, EmailParams, UpdateParams } from "../Request/ReqParams";
-import { UserValidator, IdValidator, EmailValidator, UserUpdateValidator } from "../Validator/UserValidator";
-import { saveUser } from "../Action/User/SaveUser";
-import { listOfUsers } from "../Action/User/ListOfUsers";
-import { findUserById } from "../Action/User/FindUserById";
-import { findUserByEmail } from "../Action/User/FindUserByEmail";
-import { updateUser } from "../Action/User/UpdateUser";
-import { deleteUser } from "../Action/User/DeleteUser";
-
+import { UserRegisterParams, UserUpdateParams, UserSearchParams } from "../Type/Request";
+import { UserValidator, UpdateUserValidator, EmailValidator, ParamIdValidator } from "../Validator/Validator";
+import { UserProcessAction } from "../Action/UserProcessAction";
 
 export default class UserController extends Controller {
   async create(
@@ -18,8 +12,39 @@ export default class UserController extends Controller {
     next: NextFunction
   ) {
     try {
-      const isCreate =  await saveUser(req.body as UserRegisterParams)
+      const isCreate = await new UserProcessAction().saveUser(req.body as UserRegisterParams);
       res.json(isCreate);
+    } catch (error) {
+      log(error);
+      next(error);
+    }
+  }
+
+  async update(
+    req: Request<any, unknown, UserUpdateParams, unknown>,
+    res: Response,
+    next: NextFunction
+  ) {
+    try {
+      const { id } = req.params;
+      const { password } = req.body;
+      const isUpdate = await new UserProcessAction().updateUser(id, password);
+      res.json(isUpdate);
+    } catch (error) {
+      log(error);
+      next(error);
+    }
+  }
+
+  async delete(
+    req: Request<any, unknown, unknown, unknown>,
+    res: Response,
+    next: NextFunction
+  ) {
+    try {
+      const { id } = req.params;
+      const isDelete = await new UserProcessAction().deleteUser(id);
+      res.json(isDelete);
     } catch (error) {
       log(error);
       next(error);
@@ -32,7 +57,7 @@ export default class UserController extends Controller {
     next: NextFunction
   ) {
     try {
-      const users = await listOfUsers();
+      const users = await new UserProcessAction().listOfUser();
       res.json(users);
     } catch (error) {
       log(error);
@@ -41,60 +66,14 @@ export default class UserController extends Controller {
   }
 
   async findByEmail(
-    req: Request<unknown, unknown, EmailParams, unknown>,
+    req: Request<unknown, unknown, UserSearchParams, unknown>,
     res: Response,
     next: NextFunction
   ) {
     try {
       const { email } = req.body;
-      const user = await findUserByEmail(email);
+      const user = await new UserProcessAction().findUserByEmail(email);
       res.json(user);
-    } catch (error) {
-      log(error);
-      next(error);
-    }
-  }
-
-  async findById(
-    req: Request<unknown, unknown, IdParams, unknown>,
-    res: Response,
-    next: NextFunction
-  ) {
-    try {
-      const { id } = req.body;
-      const user = await findUserById(id);
-      res.json(user);
-    } catch (error) {
-      log(error);
-      next(error);
-    }
-  }
-
-  async update(
-    req: Request<unknown, unknown, UpdateParams, unknown>,
-    res: Response,
-    next: NextFunction
-  ) {
-    try {
-
-      const { id, password } = req.body;
-      const isUpdate = await updateUser(id, password);
-      res.json(isUpdate);
-    } catch (error) {
-      log(error);
-      next(error);
-    }
-  }
-
-  async delete(
-    req: Request<IdParams, unknown, unknown, unknown>,
-    res: Response,
-    next: NextFunction
-  ) {
-    try {
-      const { id } = req.params;
-      const isDelete = await deleteUser(id);
-      res.json(isDelete);
     } catch (error) {
       log(error);
       next(error);
@@ -103,12 +82,10 @@ export default class UserController extends Controller {
 
   register() {
     this.router.post("/register", [UserValidator], this.create.bind(this));
-    this.router.post("/update/:id", [UserUpdateValidator], this.update.bind(this));
-    this.router.get("/delete/:id", this.delete.bind(this));
+    this.router.post("/update/:id", [ParamIdValidator], [UpdateUserValidator], this.update.bind(this));
+    this.router.get("/delete/:id", [ParamIdValidator], this.delete.bind(this));
     this.router.get("/list", this.list.bind(this));
-    
     this.router.post("/find-by-email", [EmailValidator], this.findByEmail.bind(this));
-    this.router.post("/find-by-id", [IdValidator], this.findById.bind(this));
     return this.router;
   }
 }

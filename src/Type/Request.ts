@@ -3,23 +3,23 @@ export interface UserRegisterParams {
   password: string;
 }
 
-export interface EmailParams {
-  email: string;
+export interface UserUpdateParams {
+  password: string;
 }
 
-export interface IdParams {
-  id: number;
+export interface UserSearchParams {
+  email: string;
 }
 
 export interface UserIdParams {
   userId: number;
 }
 
-export interface UpdateParams {
-  id: number;
-  password: string;
-}
-
 export interface TextRegisterParams {
   content: string;
+}
+
+export interface UserAuthParams {
+  email: string;
+  password: string;
 }

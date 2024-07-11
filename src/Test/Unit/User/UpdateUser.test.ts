@@ -1,7 +1,7 @@
 import bcrypt from 'bcrypt';
 import { updatePassword } from '../../../Database/Repository/UserRepository';
 import { log } from '../../../Util/Helper';
-import { updateUser } from '../../../Action/User/UpdateUser';
+import { updateUser } from '../../../Action/User/UserUpdate';
 
 jest.mock('bcrypt');
 jest.mock('../../../Database/Repository/UserRepository');

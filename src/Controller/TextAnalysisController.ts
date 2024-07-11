@@ -1,10 +1,10 @@
 import Controller from "./Controller";
 import { NextFunction, Request, Response } from "express";
 import { log } from "../Util/Helper";
-import { ParamIdValidator } from "../Validator/TextValidator";
-import { getAnalysisResult } from "../Action/Text/TextAnalysis";
-import { TextAnalysisProperty } from "../Util/TextAnalysisProperty";
-import { findTextById } from "../Action/Text/FindTextById";
+import { TextAnalysisProperty } from "../Type/TextAnalysisProperty";
+import { ParamIdValidator } from "../Validator/Validator";
+import { TextProcessAction } from "../Action/TextProcessAction";
+import { TextAnalysisProcessAction } from "../Action/TextAnalysisProcessAction";
 
 export default class TextAnalysisController extends Controller {
   async countWord(
@@ -14,7 +14,7 @@ export default class TextAnalysisController extends Controller {
   ) {
     try {
       const { id } = req.params;
-      const wordCount = await getAnalysisResult(id, TextAnalysisProperty.WORD_COUNT);
+      const wordCount = await new TextAnalysisProcessAction().getAnalysisReport(id, TextAnalysisProperty.WORD_COUNT);
       res.json({ wordCount });
     } catch (error) {
       log(error);
@@ -29,7 +29,7 @@ export default class TextAnalysisController extends Controller {
   ) {
     try {
       const { id } = req.params;
-      const characterCount = await getAnalysisResult(id, TextAnalysisProperty.CHARACTER_COUNT);
+      const characterCount = await new TextAnalysisProcessAction().getAnalysisReport(id, TextAnalysisProperty.CHARACTER_COUNT);
       res.json({ characterCount });
     } catch (error) {
       log(error);
@@ -44,7 +44,7 @@ export default class TextAnalysisController extends Controller {
   ) {
     try {
       const { id } = req.params;
-      const sentenceCount = await getAnalysisResult(id, TextAnalysisProperty.SENTENCE_COUNT);
+      const sentenceCount = await new TextAnalysisProcessAction().getAnalysisReport(id, TextAnalysisProperty.SENTENCE_COUNT);
       res.json({ sentenceCount });
     } catch (error) {
       log(error);
@@ -59,7 +59,7 @@ export default class TextAnalysisController extends Controller {
   ) {
     try {
       const { id } = req.params;
-      const paragraphCount = await getAnalysisResult(id, TextAnalysisProperty.PARAGRAPH_COUNT);
+      const paragraphCount = await new TextAnalysisProcessAction().getAnalysisReport(id, TextAnalysisProperty.PARAGRAPH_COUNT);
       res.json({ paragraphCount });
     } catch (error) {
       log(error);
@@ -74,7 +74,7 @@ export default class TextAnalysisController extends Controller {
   ) {
     try {
       const { id } = req.params;
-      const longestWord = await getAnalysisResult(id, TextAnalysisProperty.lONGEST_WORD);
+      const longestWord = await new TextAnalysisProcessAction().getAnalysisReport(id, TextAnalysisProperty.lONGEST_WORD);
       res.json({ longestWord });
     } catch (error) {
       log(error);
@@ -82,14 +82,14 @@ export default class TextAnalysisController extends Controller {
     }
   }
 
-  async findFullDetails(
+  async fullDetails(
     req: Request<any, unknown, unknown, unknown>,
     res: Response,
     next: NextFunction
   ) {
     try {
       const { id } = req.params;
-      const text = await findTextById(id);
+      const text = await new TextProcessAction().findTextById(id);
       res.json(text);
     } catch (error) {
       log(error);
@@ -108,7 +108,7 @@ export default class TextAnalysisController extends Controller {
     this.router.get("/sentence-count/:id", [ParamIdValidator], this.countSentence.bind(this));
     this.router.get("/paragraph-count/:id", [ParamIdValidator], this.countParagraph.bind(this));
     this.router.get("/longest-word/:id", [ParamIdValidator], this.longestWord.bind(this));
-    this.router.get("/find/:id", [ParamIdValidator], this.findFullDetails.bind(this));
+    this.router.get("/find/:id", [ParamIdValidator], this.fullDetails.bind(this));
 
     return this.router;
   }

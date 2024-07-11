@@ -1,8 +1,10 @@
-export const log = (...params: any) => {
+import bcrypt from "bcrypt";
+
+export function log (...params: any) {
   console.log(new Date(), ...params)
 }
 
-export const getErrorMessage = (errorCode: number): string => {
+export function getErrorMessage (errorCode: number): string {
     switch (errorCode) {
       case 401:
         return "Invalid username or password";
@@ -12,3 +14,8 @@ export const getErrorMessage = (errorCode: number): string => {
         return "Unknown error";
     }
   };
+
+ 
+export async function hashPassword (password: string): Promise<string> {
+    return await bcrypt.hash(password, 10);
+}
