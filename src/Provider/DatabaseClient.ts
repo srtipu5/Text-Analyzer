@@ -8,7 +8,7 @@ export default {
   async connect() {
     try {
       connection = await createConnection({
-        type: "postgres",
+        type: process.env.DB_TYPE as "mysql" | "postgres" | "mongodb",
         host: process.env.DB_HOST as string,
         port: +process.env.DB_PORT!,
         username: process.env.DB_USER as string,
