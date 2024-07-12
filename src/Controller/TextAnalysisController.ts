@@ -18,8 +18,8 @@ export default class TextAnalysisController extends Controller {
     try {
       const { id } = req.params;
       const loggedInUser = new UserAuthProcessAction().getLoggedInUserDetails(req);
-      const response = await new TextAnalysisProcessAction().getAnalysisReport(id, loggedInUser, TextAnalysisProperty.WORD_COUNT);
-      res.json({ response });
+      const wordCount = await new TextAnalysisProcessAction().getAnalysisReport(id, loggedInUser, TextAnalysisProperty.WORD_COUNT);
+      res.json({ wordCount });
     } catch (error) {
       log(error);
       next(error);
@@ -34,8 +34,8 @@ export default class TextAnalysisController extends Controller {
     try {
       const { id } = req.params;
       const loggedInUser = new UserAuthProcessAction().getLoggedInUserDetails(req);
-      const response = await new TextAnalysisProcessAction().getAnalysisReport(id, loggedInUser, TextAnalysisProperty.CHARACTER_COUNT);
-      res.json({ response });
+      const characterCount = await new TextAnalysisProcessAction().getAnalysisReport(id, loggedInUser, TextAnalysisProperty.CHARACTER_COUNT);
+      res.json({ characterCount });
     } catch (error) {
       log(error);
       next(error);
@@ -50,8 +50,8 @@ export default class TextAnalysisController extends Controller {
     try {
       const { id } = req.params;
       const loggedInUser = new UserAuthProcessAction().getLoggedInUserDetails(req);
-      const response = await new TextAnalysisProcessAction().getAnalysisReport(id, loggedInUser, TextAnalysisProperty.SENTENCE_COUNT);
-      res.json({ response });
+      const sentenceCount = await new TextAnalysisProcessAction().getAnalysisReport(id, loggedInUser, TextAnalysisProperty.SENTENCE_COUNT);
+      res.json({ sentenceCount });
     } catch (error) {
       log(error);
       next(error);
@@ -66,8 +66,8 @@ export default class TextAnalysisController extends Controller {
     try {
       const { id } = req.params;
       const loggedInUser = new UserAuthProcessAction().getLoggedInUserDetails(req);
-      const response = await new TextAnalysisProcessAction().getAnalysisReport(id, loggedInUser, TextAnalysisProperty.PARAGRAPH_COUNT);
-      res.json({ response });
+      const paragraphCount = await new TextAnalysisProcessAction().getAnalysisReport(id, loggedInUser, TextAnalysisProperty.PARAGRAPH_COUNT);
+      res.json({ paragraphCount });
     } catch (error) {
       log(error);
       next(error);
@@ -82,8 +82,8 @@ export default class TextAnalysisController extends Controller {
     try {
       const { id } = req.params;
       const loggedInUser = new UserAuthProcessAction().getLoggedInUserDetails(req);
-      const response = await new TextAnalysisProcessAction().getAnalysisReport(id, loggedInUser, TextAnalysisProperty.lONGEST_WORD);
-      res.json({ response });
+      const longestWord = await new TextAnalysisProcessAction().getAnalysisReport(id, loggedInUser, TextAnalysisProperty.lONGEST_WORD);
+      res.json({ longestWord });
     } catch (error) {
       log(error);
       next(error);

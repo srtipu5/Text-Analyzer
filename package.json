@@ -10,7 +10,7 @@
     "migrate": "ts-node -r dotenv/config node_modules/typeorm/cli.js migration:run -d migration.ts",
     "revert": "ts-node -r dotenv/config node_modules/typeorm/cli.js migration:revert -d migration.ts",
     "build": "tsc",
-    "start": "nodemon src/index.ts"
+    "start": "nodemon ./src/index.ts"
   },
   "keywords": [],
   "author": "",

@@ -14,7 +14,7 @@ app.use(bodyParser.urlencoded({ extended: true })); // to support URL-encoded bo
 // Apply the rate limiter to all routes
 app.use(RateLimiterMiddleware);
 
-app.use("/api", new AuthController().register());
+app.use("/auth", new AuthController().register());
 app.use("/user", new UserController().register());
 app.use("/text", new TextController().register());
 app.use("/analysis", new TextAnalysisController().register());
