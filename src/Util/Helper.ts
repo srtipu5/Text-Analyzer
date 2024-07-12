@@ -1,4 +1,5 @@
 import bcrypt from "bcrypt";
+import { uuid } from "licia";
 import { ApiResponse } from "../Type/Response";
 
 export function log(...params: any) {
@@ -18,5 +19,13 @@ export async function hashPassword(password: string): Promise<string> {
 }
 
 export async function comparePassword( reqPassword: string, userPassword: string): Promise<Boolean> {
-  return await bcrypt.compare(reqPassword, userPassword);
+  return await bcrypt.compareSync(reqPassword, userPassword);
+}
+
+export function getUserKey(id : number): string {
+  return `userId_${id}`;
+}
+
+export function getRefreshTokenKey() : string{
+  return uuid();
 }

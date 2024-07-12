@@ -1,12 +1,12 @@
-import { uuid } from "licia";
 import { NextFunction, Request, Response } from "express";
 import Controller from "./Controller";
-import { comparePassword, log } from "../Util/Helper";
+import { comparePassword, errorApiResponse, getRefreshTokenKey, getUserKey, log, successApiResponse } from "../Util/Helper";
 import { UserAuthParams } from "../Type/Request";
 import { TokenValidator, UserValidator } from "../Validator/Validator";
-import { authCache } from "../Service/AuthCache";
 import { UserAuthProcessAction } from "../Action/UserAuthProcessAction";
 import { UserRepo } from "../Database/Repository/UserRepo";
+import CacheService from "../Service/CacheService";
+import { AuthMiddleware } from "../Middleware/AuthMiddleware";
 
 export default class AuthController extends Controller {
   async login(
@@ -17,21 +17,24 @@ export default class AuthController extends Controller {
     try {
       const { email, password } = req.body;
       const user = await new UserRepo().findByEmail(email);
+
       if (!user) {
         throw new Error("User not found");
       }
 
       if (!(await comparePassword(password, user.password))) {
-        throw new Error("Password is incorrect");
+        throw new Error("Email or Password is incorrect");
       }
 
       const payload = new UserAuthProcessAction().buildPayload(user);
 
       const token = new UserAuthProcessAction().getToken(payload);
 
-      const refreshToken = uuid();
-      authCache.set(refreshToken, payload);
-      res.json({ token, refreshToken: refreshToken });
+      CacheService.set(getUserKey(user.id), user, 30);  // user cached
+
+      const refreshTokenKey = getRefreshTokenKey();
+      CacheService.set(refreshTokenKey, payload, 24*60);  // user token cached
+      res.json({ token, refreshToken: refreshTokenKey });
     } catch (error) {
       log(error);
       next(error);
@@ -44,7 +47,7 @@ export default class AuthController extends Controller {
     next: NextFunction
   ) {
     try {
-      const cachedUser = authCache.get(req.body.refreshToken);
+      const cachedUser = CacheService.get(req.body.refreshToken);
       if (!cachedUser) {
         throw new Error(
           `User not found with refresh token: ${req.body.refreshToken}`
@@ -60,9 +63,31 @@ export default class AuthController extends Controller {
     }
   }
 
+  async logout(
+    req: Request<unknown, unknown, any, unknown>,
+    res: Response,
+    next: NextFunction
+  ) {
+    try {
+      const loggedInUser = new UserAuthProcessAction().getLoggedInUserDetails(req); 
+
+      if(!loggedInUser){
+        res.status(401).json(errorApiResponse('Not logged in'));
+      }
+      
+      CacheService.del(getUserKey(loggedInUser.id));
+      res.status(401).json(successApiResponse('Logout successful'));
+    } catch (error) {
+      log(error);
+      next(error);
+    }
+  }
+
   register() {
     this.router.post("/login", [UserValidator], this.login.bind(this));
     this.router.post("/refresh", [TokenValidator], this.refresh.bind(this));
+    this.router.use(AuthMiddleware);
+    this.router.post("/logout", this.logout.bind(this));
     return this.router;
   }
 }

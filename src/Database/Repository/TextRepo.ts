@@ -3,57 +3,49 @@ import { TextModel } from "../Model/TextModel";
 import { log } from "../../Util/Helper";
 
 export class TextRepo {
-    
   private repo: Repository<TextModel>;
+
   constructor() {
     this.repo = getRepository(TextModel);
   }
 
-  async find(): Promise<TextModel[] | null> {
+  private async executeQuery<T>(query: Promise<T>): Promise<T | null> {
     try {
-      const texts = await this.repo.find();
-      return texts || null;
+      const result = await query;
+      return result || null;
     } catch (error) {
-      log("Error in findAll:", error);
+      log("Database query error:", error);
       return null;
     }
   }
 
-  async findByUserId(userId: number): Promise<TextModel[] | null> {
-    try {
-      const texts = await this.repo.find({ where: { userId } });
-      return texts || null;
-    } catch (error) {
-      log("Error in findByUserId:", error);
-      return null;
-    }
+  find(): Promise<TextModel[] | null> {
+    return this.executeQuery(
+      this.repo.find({ order: { id: "ASC" } })
+    );
   }
 
-  async findById(id: number): Promise<TextModel | null> {
-    try {
-      const text = await this.repo.findOne({ where: { id } });
-      return text || null;
-    } catch (error) {
-      log("Error in findById:", error);
-      return null;
-    }
+  findByUserId(userId: number): Promise<TextModel[] | null> {
+    return this.executeQuery(
+      this.repo.find({ where: { userId }, order: { id: "ASC" } })
+    );
   }
 
-  async save(text: TextModel): Promise<TextModel | null> {
-    try {
-      return  await this.repo.save(text);
-    } catch (error) {
-      log("Error in save text:", error);
-      return null;
-    }
+  findById(id: number): Promise<TextModel | null> {
+    return this.executeQuery(
+      this.repo.findOne({ where: { id } })
+    );
   }
 
-  async delete(text: TextModel): Promise<TextModel | null> {
-    try {
-      return await this.repo.remove(text);
-    } catch (error) {
-      log("Error in deleteById:", error);
-      return null;
-    }
+  save(text: TextModel): Promise<TextModel | null> {
+    return this.executeQuery(
+      this.repo.save(text)
+    );
+  }
+
+  delete(text: TextModel): Promise<TextModel | null> {
+    return this.executeQuery(
+      this.repo.remove(text)
+    );
   }
 }

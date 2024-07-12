@@ -1,90 +1,106 @@
 import { UserModel } from "../Database/Model/UserModel";
 import { UserRepo } from "../Database/Repository/UserRepo";
+import CacheService from "../Service/CacheService";
 import { UserRegisterParams } from "../Type/Request";
-import { ApiResponse } from "../Type/Response";
-import {
-  hashPassword,
-  log,
-  successApiResponse,
-  errorApiResponse
-} from "../Util/Helper";
+import { AppError } from "../Util/Exception";
+import { hashPassword } from "../Util/Helper";
 
 export class UserProcessAction {
-  async saveUser(reqUser: UserRegisterParams): Promise<ApiResponse> {
-    try {
-      if (await new UserRepo().findByEmail(reqUser.email)) {
-        return errorApiResponse("User already exists");
-      }
+  private userRepo: UserRepo;
 
-      const user = await this.initializeUser(reqUser);
-      const result = await new UserRepo().save(user);
-      if (!result) return errorApiResponse("Error saving user");
-
-      return successApiResponse("User successfully saved", result);
-    } catch (error) {
-      log(error);
-      return errorApiResponse("Internal server error");
-    }
+  constructor() {
+    this.userRepo = new UserRepo();
   }
 
-  async updateUser(id: number, reqPassword: string): Promise<ApiResponse> {
-    try {
-      const user = await new UserRepo().findById(id);
-      if (!user) return errorApiResponse("Not found");
-      await this.updateUserPassword(user, reqPassword);
-      const result = await new UserRepo().save(user);
-      if (!result) return errorApiResponse("Error updating user");
-
-      return successApiResponse("User successfully updated", result); 
-    } catch (error) {
-      log(error);
-      return errorApiResponse("Internal server error");
-    }
+  async saveUser(reqUser: UserRegisterParams): Promise<UserModel> {
+    await this.ensureUserDoesNotExist(reqUser.email);
+    const user = await this.initializeUser(reqUser);
+    
+    // Cache the user data
+    CacheService.set(`user:${user.email}`, user, 30); // Cache for 30 minutes
+    
+    return this.saveUserToRepo(user, "Error saving user");
   }
 
-  async deleteUser(id: number): Promise<ApiResponse> {
-    try {
-      const user = await new UserRepo().findById(id);
-      if (!user) return errorApiResponse("Not found");
-      const result = await new UserRepo().delete(user);
-      if (!result) return errorApiResponse("Error deleting user");
-
-      return successApiResponse("User successfully deleted", result);  
-    } catch (error) {
-      log(error);
-      return errorApiResponse("Internal server error");
-    }
+  async updateUser(id: number, reqPassword: string): Promise<UserModel> {
+    const user = await this.findUserByIdOrThrow(id);
+    await this.updateUserPassword(user, reqPassword);
+    
+    // Update the cache
+    CacheService.set(`user:${user.email}`, user, 30); // Update cache for 30 minutes
+    
+    return this.saveUserToRepo(user, "Error updating user");
   }
 
-  async listOfUser(): Promise<ApiResponse> {
-    try {
-      const users = await new UserRepo().find();
-      return successApiResponse("Users successfully fetched", users);  
-    } catch (error) {
-      log(error);
-      return errorApiResponse("Internal server error");
+  async deleteUser(id: number): Promise<UserModel> {
+    const user = await this.findUserByIdOrThrow(id);
+    const deletedUser = await this.userRepo.delete(user);
+    if (!deletedUser) {
+      throw new AppError(400, "Error deleting user");
     }
+
+    // Remove from cache
+    CacheService.del(`user:${user.email}`);
+    
+    return deletedUser;
   }
 
-  async findUserByEmail(email: string): Promise<ApiResponse> {
-    try {
-      const user = await new UserRepo().findByEmail(email);
-      if(!user) return errorApiResponse("Not found"); 
-      return successApiResponse("User successfully fetched", user); 
-    } catch (error) {
-      log(error);
-      return errorApiResponse("Internal server error");
+  async listOfUser(): Promise<UserModel[]> {
+    const users = await this.userRepo.find();
+    if (!users) {
+      throw new AppError(404, `User not found`);
     }
+    return users;
   }
 
-  async initializeUser(reqUser: UserRegisterParams): Promise<UserModel> {
+  async findUserByEmail(email: string): Promise<UserModel> {
+    // Try to get from cache first
+    const cachedUser = CacheService.get(`user:${email}`);
+    if (cachedUser) {
+      return cachedUser;
+    }
+
+    const user = await this.userRepo.findByEmail(email);
+    if (!user) {
+      throw new AppError(404, `User not found`);
+    }
+    
+    // Cache the user data
+    CacheService.set(`user:${email}`, user, 30); // Cache for 30 minutes
+    
+    return user;
+  }
+
+  private async initializeUser(reqUser: UserRegisterParams): Promise<UserModel> {
     const user = new UserModel();
     user.email = reqUser.email;
     user.password = await hashPassword(reqUser.password);
     return user;
   }
 
-  async updateUserPassword(user: UserModel, password: string): Promise<void> {
+  private async updateUserPassword(user: UserModel, password: string): Promise<void> {
     user.password = await hashPassword(password);
+  }
+
+  private async ensureUserDoesNotExist(email: string): Promise<void> {
+    if (await this.userRepo.findByEmail(email)) {
+      throw new AppError(409, `User already exists`);
+    }
+  }
+
+  private async findUserByIdOrThrow(id: number): Promise<UserModel> {
+    const user = await this.userRepo.findById(id);
+    if (!user) {
+      throw new AppError(404, `User not found`);
+    }
+    return user;
+  }
+
+  private async saveUserToRepo(user: UserModel, errorMessage: string): Promise<UserModel> {
+    const savedUser = await this.userRepo.save(user);
+    if (!savedUser) {
+      throw new AppError(400, errorMessage);
+    }
+    return savedUser;
   }
 }

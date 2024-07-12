@@ -1,6 +1,6 @@
 import Controller from "./Controller";
 import { NextFunction, Request, Response } from "express";
-import { errorApiResponse, log } from "../Util/Helper";
+import { log, successApiResponse } from "../Util/Helper";
 import {
   UserRegisterParams,
   UserUpdateParams,
@@ -16,6 +16,7 @@ import { UserProcessAction } from "../Action/UserProcessAction";
 import { AuthMiddleware } from "../Middleware/AuthMiddleware";
 import { AccessMiddleware } from "../Middleware/AccessMiddleware";
 import { UserAuthProcessAction } from "../Action/UserAuthProcessAction";
+import { AppError } from "../Util/Exception";
 
 export default class UserController extends Controller {
   async create(
@@ -24,10 +25,8 @@ export default class UserController extends Controller {
     next: NextFunction
   ) {
     try {
-      const response = await new UserProcessAction().saveUser(
-        req.body as UserRegisterParams
-      );
-      res.json(response);
+      const savedUser = await new UserProcessAction().saveUser(req.body as UserRegisterParams);
+      res.json(successApiResponse("User successfully registered", savedUser));
     } catch (error) {
       log(error);
       next(error);
@@ -43,11 +42,11 @@ export default class UserController extends Controller {
       const { id } = req.params;
       const { password } = req.body;
       const loggedInUser = new UserAuthProcessAction().getLoggedInUserDetails(req); 
-      if(id !== loggedInUser.userId && loggedInUser.role !== 'admin'){
-        return res.json(errorApiResponse("You don't have access"));
+      if(id !== loggedInUser.id && loggedInUser.role !== 'admin'){
+        throw new AppError(403, "You don't have access");
       }
-      const response = await new UserProcessAction().updateUser(id, password);
-      res.json(response);
+      const updatedUser = await new UserProcessAction().updateUser(id, password);
+      res.json(successApiResponse("User successfully updated", updatedUser));
     } catch (error) {
       log(error);
       next(error);
@@ -62,11 +61,11 @@ export default class UserController extends Controller {
     try {
       const { id } = req.params;
       const loggedInUser = new UserAuthProcessAction().getLoggedInUserDetails(req); 
-      if(id !== loggedInUser.userId && loggedInUser.role !== 'admin'){
-        return res.json(errorApiResponse("You don't have access"));
+      if(id !== loggedInUser.id && loggedInUser.role !== 'admin'){
+        throw new AppError(403, "You don't have access");
       }
-      const response = await new UserProcessAction().deleteUser(id);
-      res.json(response);
+      const deletedUser = await new UserProcessAction().deleteUser(id);
+      res.json(successApiResponse("User successfully deleted", deletedUser));
     } catch (error) {
       log(error);
       next(error);
@@ -79,8 +78,8 @@ export default class UserController extends Controller {
     next: NextFunction
   ) {
     try {
-      const response = await new UserProcessAction().listOfUser();
-      res.json(response);
+      const users = await new UserProcessAction().listOfUser();
+      res.json(successApiResponse("User successfully fetched", users));
     } catch (error) {
       log(error);
       next(error);
@@ -94,8 +93,8 @@ export default class UserController extends Controller {
   ) {
     try {
       const { email } = req.body;
-      const response = await new UserProcessAction().findUserByEmail(email);
-      res.json(response);
+      const user = await new UserProcessAction().findUserByEmail(email);
+      res.json(successApiResponse("User successfully fetched", user));
     } catch (error) {
       log(error);
       next(error);
