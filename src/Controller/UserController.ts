@@ -1,9 +1,21 @@
 import Controller from "./Controller";
 import { NextFunction, Request, Response } from "express";
-import { log } from "../Util/Helper";
-import { UserRegisterParams, UserUpdateParams, UserSearchParams } from "../Type/Request";
-import { UserValidator, UpdateUserValidator, EmailValidator, ParamIdValidator } from "../Validator/Validator";
+import { errorApiResponse, log } from "../Util/Helper";
+import {
+  UserRegisterParams,
+  UserUpdateParams,
+  UserSearchParams,
+} from "../Type/Request";
+import {
+  UserValidator,
+  UpdateUserValidator,
+  EmailValidator,
+  ParamIdValidator,
+} from "../Validator/Validator";
 import { UserProcessAction } from "../Action/UserProcessAction";
+import { AuthMiddleware } from "../Middleware/AuthMiddleware";
+import { AccessMiddleware } from "../Middleware/AccessMiddleware";
+import { UserAuthProcessAction } from "../Action/UserAuthProcessAction";
 
 export default class UserController extends Controller {
   async create(
@@ -12,8 +24,10 @@ export default class UserController extends Controller {
     next: NextFunction
   ) {
     try {
-      const isCreate = await new UserProcessAction().saveUser(req.body as UserRegisterParams);
-      res.json(isCreate);
+      const response = await new UserProcessAction().saveUser(
+        req.body as UserRegisterParams
+      );
+      res.json(response);
     } catch (error) {
       log(error);
       next(error);
@@ -28,8 +42,12 @@ export default class UserController extends Controller {
     try {
       const { id } = req.params;
       const { password } = req.body;
-      const isUpdate = await new UserProcessAction().updateUser(id, password);
-      res.json(isUpdate);
+      const loggedInUser = new UserAuthProcessAction().getLoggedInUserDetails(req); 
+      if(id !== loggedInUser.userId && loggedInUser.role !== 'admin'){
+        return res.json(errorApiResponse("You don't have access"));
+      }
+      const response = await new UserProcessAction().updateUser(id, password);
+      res.json(response);
     } catch (error) {
       log(error);
       next(error);
@@ -43,8 +61,12 @@ export default class UserController extends Controller {
   ) {
     try {
       const { id } = req.params;
-      const isDelete = await new UserProcessAction().deleteUser(id);
-      res.json(isDelete);
+      const loggedInUser = new UserAuthProcessAction().getLoggedInUserDetails(req); 
+      if(id !== loggedInUser.userId && loggedInUser.role !== 'admin'){
+        return res.json(errorApiResponse("You don't have access"));
+      }
+      const response = await new UserProcessAction().deleteUser(id);
+      res.json(response);
     } catch (error) {
       log(error);
       next(error);
@@ -57,8 +79,8 @@ export default class UserController extends Controller {
     next: NextFunction
   ) {
     try {
-      const users = await new UserProcessAction().listOfUser();
-      res.json(users);
+      const response = await new UserProcessAction().listOfUser();
+      res.json(response);
     } catch (error) {
       log(error);
       next(error);
@@ -72,8 +94,8 @@ export default class UserController extends Controller {
   ) {
     try {
       const { email } = req.body;
-      const user = await new UserProcessAction().findUserByEmail(email);
-      res.json(user);
+      const response = await new UserProcessAction().findUserByEmail(email);
+      res.json(response);
     } catch (error) {
       log(error);
       next(error);
@@ -81,11 +103,16 @@ export default class UserController extends Controller {
   }
 
   register() {
-    this.router.post("/register", [UserValidator], this.create.bind(this));
+    this.router.post("/register", [UserValidator], this.create.bind(this)); // public route
+    
+    this.router.use(AuthMiddleware);
     this.router.post("/update/:id", [ParamIdValidator], [UpdateUserValidator], this.update.bind(this));
     this.router.get("/delete/:id", [ParamIdValidator], this.delete.bind(this));
+    
+    this.router.use(AccessMiddleware('admin'));
     this.router.get("/list", this.list.bind(this));
-    this.router.post("/find-by-email", [EmailValidator], this.findByEmail.bind(this));
+    this.router.post("/find-by-email",[EmailValidator], this.findByEmail.bind(this));
+
     return this.router;
   }
 }

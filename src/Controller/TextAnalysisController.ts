@@ -5,6 +5,9 @@ import { TextAnalysisProperty } from "../Type/TextAnalysisProperty";
 import { ParamIdValidator } from "../Validator/Validator";
 import { TextProcessAction } from "../Action/TextProcessAction";
 import { TextAnalysisProcessAction } from "../Action/TextAnalysisProcessAction";
+import { AuthMiddleware } from "../Middleware/AuthMiddleware";
+import { AccessMiddleware } from "../Middleware/AccessMiddleware";
+import { UserAuthProcessAction } from "../Action/UserAuthProcessAction";
 
 export default class TextAnalysisController extends Controller {
   async countWord(
@@ -14,8 +17,9 @@ export default class TextAnalysisController extends Controller {
   ) {
     try {
       const { id } = req.params;
-      const wordCount = await new TextAnalysisProcessAction().getAnalysisReport(id, TextAnalysisProperty.WORD_COUNT);
-      res.json({ wordCount });
+      const loggedInUser = new UserAuthProcessAction().getLoggedInUserDetails(req);
+      const response = await new TextAnalysisProcessAction().getAnalysisReport(id, loggedInUser, TextAnalysisProperty.WORD_COUNT);
+      res.json({ response });
     } catch (error) {
       log(error);
       next(error);
@@ -29,8 +33,9 @@ export default class TextAnalysisController extends Controller {
   ) {
     try {
       const { id } = req.params;
-      const characterCount = await new TextAnalysisProcessAction().getAnalysisReport(id, TextAnalysisProperty.CHARACTER_COUNT);
-      res.json({ characterCount });
+      const loggedInUser = new UserAuthProcessAction().getLoggedInUserDetails(req);
+      const response = await new TextAnalysisProcessAction().getAnalysisReport(id, loggedInUser, TextAnalysisProperty.CHARACTER_COUNT);
+      res.json({ response });
     } catch (error) {
       log(error);
       next(error);
@@ -44,8 +49,9 @@ export default class TextAnalysisController extends Controller {
   ) {
     try {
       const { id } = req.params;
-      const sentenceCount = await new TextAnalysisProcessAction().getAnalysisReport(id, TextAnalysisProperty.SENTENCE_COUNT);
-      res.json({ sentenceCount });
+      const loggedInUser = new UserAuthProcessAction().getLoggedInUserDetails(req);
+      const response = await new TextAnalysisProcessAction().getAnalysisReport(id, loggedInUser, TextAnalysisProperty.SENTENCE_COUNT);
+      res.json({ response });
     } catch (error) {
       log(error);
       next(error);
@@ -59,8 +65,9 @@ export default class TextAnalysisController extends Controller {
   ) {
     try {
       const { id } = req.params;
-      const paragraphCount = await new TextAnalysisProcessAction().getAnalysisReport(id, TextAnalysisProperty.PARAGRAPH_COUNT);
-      res.json({ paragraphCount });
+      const loggedInUser = new UserAuthProcessAction().getLoggedInUserDetails(req);
+      const response = await new TextAnalysisProcessAction().getAnalysisReport(id, loggedInUser, TextAnalysisProperty.PARAGRAPH_COUNT);
+      res.json({ response });
     } catch (error) {
       log(error);
       next(error);
@@ -74,23 +81,39 @@ export default class TextAnalysisController extends Controller {
   ) {
     try {
       const { id } = req.params;
-      const longestWord = await new TextAnalysisProcessAction().getAnalysisReport(id, TextAnalysisProperty.lONGEST_WORD);
-      res.json({ longestWord });
+      const loggedInUser = new UserAuthProcessAction().getLoggedInUserDetails(req);
+      const response = await new TextAnalysisProcessAction().getAnalysisReport(id, loggedInUser, TextAnalysisProperty.lONGEST_WORD);
+      res.json({ response });
     } catch (error) {
       log(error);
       next(error);
     }
   }
 
-  async fullDetails(
+  async singleContentFullDetails(
     req: Request<any, unknown, unknown, unknown>,
     res: Response,
     next: NextFunction
   ) {
     try {
       const { id } = req.params;
-      const text = await new TextProcessAction().findTextById(id);
-      res.json(text);
+      const loggedInUser = new UserAuthProcessAction().getLoggedInUserDetails(req);
+      const response = await new TextProcessAction().findTextById(id, loggedInUser);
+      res.json(response);
+    } catch (error) {
+      log(error);
+      next(error);
+    }
+  }
+
+  async allContentFullDetails(
+    req: Request<unknown, unknown, unknown, unknown>,
+    res: Response,
+    next: NextFunction
+  ) {
+    try {
+      const response = await new TextProcessAction().listOfText();
+      res.json(response);
     } catch (error) {
       log(error);
       next(error);
@@ -102,14 +125,18 @@ export default class TextAnalysisController extends Controller {
     /*
     Here param id means TextModel id property
    */
-    
+    this.router.use(AuthMiddleware);  
     this.router.get("/word-count/:id", [ParamIdValidator], this.countWord.bind(this));
     this.router.get("/character-count/:id", [ParamIdValidator], this.countCharacter.bind(this));
     this.router.get("/sentence-count/:id", [ParamIdValidator], this.countSentence.bind(this));
     this.router.get("/paragraph-count/:id", [ParamIdValidator], this.countParagraph.bind(this));
     this.router.get("/longest-word/:id", [ParamIdValidator], this.longestWord.bind(this));
-    this.router.get("/find/:id", [ParamIdValidator], this.fullDetails.bind(this));
-
+    this.router.get("/find/:id", [ParamIdValidator], this.singleContentFullDetails.bind(this));
+   /*  
+    only admin can see all text full analysis report
+   */
+    this.router.use(AccessMiddleware('admin'));
+    this.router.get("/all", this.allContentFullDetails.bind(this));
     return this.router;
   }
 }

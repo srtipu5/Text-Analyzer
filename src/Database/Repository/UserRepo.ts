@@ -11,8 +11,7 @@ export class UserRepo {
 
   async find(): Promise<UserModel[] | null> {
     try {
-      const users = await this.repo.find();
-      return users || null;
+      return await this.repo.find();
     } catch (error) {
       log("Error in find:", error);
       return null;
@@ -39,37 +38,22 @@ export class UserRepo {
     }
   }
 
-  async save(user: UserModel): Promise<boolean> {
+  async save(user: UserModel): Promise<UserModel | null> {
     try {
-      await this.repo.save(user);
-      return true;
+      return await this.repo.save(user);
     } catch (error) {
-      log("Error in save user:", error);
-      return false;
+      log("Error in save:", error);
+      return null;
     }
   }
 
-  async deleteById(id: number): Promise<boolean> {
+  async delete(user: UserModel): Promise<UserModel | null> {
     try {
-      const user = await this.findById(id);
-      if (!user) return false;
-      await this.repo.remove(user);
-      return true;
+      return await this.repo.remove(user);
     } catch (error) {
-      log("Error in deleteById:", error);
-      return false;
+      log("Error in delete:", error);
+      return null;
     }
   }
 
-  async deleteByEmail(email: string): Promise<boolean> {
-    try {
-      const user = await this.findByEmail(email);
-      if (!user) return false;
-      await this.repo.remove(user);
-      return true;
-    } catch (error) {
-      log("Error in deleteByEmail:", error);
-      return false;
-    }
-  }
 }

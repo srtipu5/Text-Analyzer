@@ -1,56 +1,79 @@
 import { UserModel } from "../Database/Model/UserModel";
 import { UserRepo } from "../Database/Repository/UserRepo";
 import { UserRegisterParams } from "../Type/Request";
-import { hashPassword, log } from "../Util/Helper";
+import { ApiResponse } from "../Type/Response";
+import {
+  hashPassword,
+  log,
+  successApiResponse,
+  errorApiResponse
+} from "../Util/Helper";
 
 export class UserProcessAction {
-  async saveUser(reqUser: UserRegisterParams): Promise<boolean> {
+  async saveUser(reqUser: UserRegisterParams): Promise<ApiResponse> {
     try {
-      if (await new UserRepo().findByEmail(reqUser.email)) return false; // check user
+      if (await new UserRepo().findByEmail(reqUser.email)) {
+        return errorApiResponse("User already exists");
+      }
+
       const user = await this.initializeUser(reqUser);
-      return await new UserRepo().save(user);
+      const result = await new UserRepo().save(user);
+      if (!result) return errorApiResponse("Error saving user");
+
+      return successApiResponse("User successfully saved", result);
     } catch (error) {
       log(error);
-      return false;
+      return errorApiResponse("Internal server error");
     }
   }
 
-  async updateUser(id: number, reqPassword: string): Promise<Boolean> {
+  async updateUser(id: number, reqPassword: string): Promise<ApiResponse> {
     try {
       const user = await new UserRepo().findById(id);
-      if (!user) return false;
+      if (!user) return errorApiResponse("Not found");
       await this.updateUserPassword(user, reqPassword);
-      return await new UserRepo().save(user);
+      const result = await new UserRepo().save(user);
+      if (!result) return errorApiResponse("Error updating user");
+
+      return successApiResponse("User successfully updated", result); 
     } catch (error) {
       log(error);
-      return false;
+      return errorApiResponse("Internal server error");
     }
   }
 
-  async deleteUser(id: number): Promise<Boolean> {
+  async deleteUser(id: number): Promise<ApiResponse> {
     try {
-      return await new UserRepo().deleteById(id);
+      const user = await new UserRepo().findById(id);
+      if (!user) return errorApiResponse("Not found");
+      const result = await new UserRepo().delete(user);
+      if (!result) return errorApiResponse("Error deleting user");
+
+      return successApiResponse("User successfully deleted", result);  
     } catch (error) {
       log(error);
-      return false;
+      return errorApiResponse("Internal server error");
     }
   }
 
-  async listOfUser(): Promise<UserModel[] | null> {
+  async listOfUser(): Promise<ApiResponse> {
     try {
-      return await new UserRepo().find();
+      const users = await new UserRepo().find();
+      return successApiResponse("Users successfully fetched", users);  
     } catch (error) {
       log(error);
-      return null;
+      return errorApiResponse("Internal server error");
     }
   }
 
-  async findUserByEmail(email: string): Promise<UserModel | null> {
+  async findUserByEmail(email: string): Promise<ApiResponse> {
     try {
-      return await new UserRepo().findByEmail(email);
+      const user = await new UserRepo().findByEmail(email);
+      if(!user) return errorApiResponse("Not found"); 
+      return successApiResponse("User successfully fetched", user); 
     } catch (error) {
       log(error);
-      return null;
+      return errorApiResponse("Internal server error");
     }
   }
 

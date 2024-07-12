@@ -4,15 +4,16 @@ import { AppError, handleError } from '../Util/Exception'
 import UserController from "../Controller/UserController";
 import TextController from "../Controller/TextController";
 import TextAnalysisController from "../Controller/TextAnalysisController";
+import AuthController from "../Controller/AuthController";
 
 const app = express();
 app.use(bodyParser.json()); // to support JSON-encoded bodies
 app.use(bodyParser.urlencoded({ extended: true })); // to support URL-encoded bodies
 
+app.use("/api", new AuthController().register());
 app.use("/user", new UserController().register());
 app.use("/text", new TextController().register());
 app.use("/analysis", new TextAnalysisController().register());
-
 
 app.use((err: AppError, req: Request, res: Response, next: NextFunction) => {
   handleError(err, res)

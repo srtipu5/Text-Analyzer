@@ -49,3 +49,9 @@ export const ParamIdValidator = ValidatorMiddleware([
 ])
 
 
+export const TokenValidator = ValidatorMiddleware([
+    body('refreshToken')
+    .isString().withMessage('Refresh Token must be a string')
+    .notEmpty().withMessage('Refresh Token cannot be empty')
+    .trim()
+])

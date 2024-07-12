@@ -1,21 +1,22 @@
 import bcrypt from "bcrypt";
+import { ApiResponse } from "../Type/Response";
 
-export function log (...params: any) {
-  console.log(new Date(), ...params)
+export function log(...params: any) {
+  console.log(new Date(), ...params);
 }
 
-export function getErrorMessage (errorCode: number): string {
-    switch (errorCode) {
-      case 401:
-        return "Invalid username or password";
-      case 500:
-        return "Internal server error";
-      default:
-        return "Unknown error";
-    }
-  };
+export function successApiResponse(message: string, data?: any): ApiResponse {
+  return { message, data };
+}
 
- 
-export async function hashPassword (password: string): Promise<string> {
-    return await bcrypt.hash(password, 10);
+export function errorApiResponse(message: string): ApiResponse {
+  return { message };
+}
+
+export async function hashPassword(password: string): Promise<string> {
+  return await bcrypt.hash(password, 10);
+}
+
+export async function comparePassword( reqPassword: string, userPassword: string): Promise<Boolean> {
+  return await bcrypt.compare(reqPassword, userPassword);
 }

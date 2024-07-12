@@ -39,25 +39,21 @@ export class TextRepo {
     }
   }
 
-  async save(text: TextModel): Promise<boolean> {
+  async save(text: TextModel): Promise<TextModel | null> {
     try {
-      await this.repo.save(text);
-      return true;
+      return  await this.repo.save(text);
     } catch (error) {
       log("Error in save text:", error);
-      return false;
+      return null;
     }
   }
 
-  async deleteById(id: number): Promise<boolean> {
+  async delete(text: TextModel): Promise<TextModel | null> {
     try {
-      const text = await this.findById(id);
-      if (!text) return false;
-      await this.repo.remove(text);
-      return true;
+      return await this.repo.remove(text);
     } catch (error) {
       log("Error in deleteById:", error);
-      return false;
+      return null;
     }
   }
 }

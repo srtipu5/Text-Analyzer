@@ -1,64 +1,104 @@
 import { TextModel } from "../Database/Model/TextModel";
+import { UserModel } from "../Database/Model/UserModel";
 import { TextRepo } from "../Database/Repository/TextRepo";
 import { TextAnalysisService } from "../Service/TextAnalysisService";
-import { log } from "../Util/Helper";
+import { ApiResponse } from "../Type/Response";
+import { errorApiResponse, log, successApiResponse } from "../Util/Helper";
 
 export class TextProcessAction {
-  async saveText(reqContent: string, userId: number): Promise<boolean> {
+  async saveText(reqContent: string, loggedInUser: UserModel): Promise<ApiResponse> {
     try {
-      const text = await this.initializeText(reqContent, userId);
-      return await new TextRepo().save(text);
+      const text = await this.initializeText(reqContent, loggedInUser.id);
+
+      const result = await new TextRepo().save(text);
+      if (!result) return errorApiResponse("Error saving text");
+
+      return successApiResponse("Text successfully saved", result);
     } catch (error) {
       log(error);
-      return false;
+      return errorApiResponse("Internal server error");
     }
   }
 
-  async updateText(id: number, reqContent: string, userId: number): Promise<boolean> {
+  async updateText(id: number, reqContent: string, loggedInUser: UserModel): Promise<ApiResponse> {
     try {
       const text = await new TextRepo().findById(id);
-      if (!text) return false;
-      this.updateTextInstance(text, reqContent, userId);
-      return await new TextRepo().save(text);
+
+      if(text?.userId !== loggedInUser.id && loggedInUser.role !== 'admin'){
+        return errorApiResponse("You don't have access");
+      }
+
+      if (!text) return errorApiResponse("Not found");
+
+      this.updateTextInstance(text, reqContent, loggedInUser.id);
+
+      const result = await new TextRepo().save(text)
+      if (!result) return errorApiResponse("Error updating text");
+
+      return successApiResponse("Text successfully updated", result);
     } catch (error) {
       log(error);
-      return false;
+      return errorApiResponse("Internal server error");
     }
   }
 
-  async deleteText(id: number): Promise<Boolean> {
+  async deleteText(id: number, loggedInUser: UserModel): Promise<ApiResponse> {
     try {
-      return await new TextRepo().deleteById(id);
+      const text = await new TextRepo().findById(id);
+      if(text?.userId !== loggedInUser.id && loggedInUser.role !== 'admin'){
+        return errorApiResponse("You don't have access");
+      }
+
+      if (!text) return errorApiResponse("Not found");
+
+      const result = await new TextRepo().delete(text);
+      if (!result) return errorApiResponse("Error deleting text");
+
+      return successApiResponse("Text successfully deleted", result);
     } catch (error) {
       log(error);
-      return false;
+      return errorApiResponse("Internal server error");
     }
   }
 
-  async listOfText(): Promise<TextModel[] | null> {
+  async listOfText(): Promise<ApiResponse> {
     try {
-      return await new TextRepo().find();
+      const result = await new TextRepo().find();
+      if (!result) return errorApiResponse("Error fetching text");
+
+      return successApiResponse("Text successfully fetched", result);
     } catch (error) {
       log(error);
-      return null;
+      return errorApiResponse("Internal server error");
     }
   }
 
-  async findTextById(id: number): Promise<TextModel | null> {
+  async findTextById(id: number, loggedInUser: UserModel): Promise<ApiResponse> {
     try {
-      return await new TextRepo().findById(id);
+
+      const text = await new TextRepo().findById(id);
+      if(text?.userId !== loggedInUser.id && loggedInUser.role !== 'admin'){
+        return errorApiResponse("You don't have access");
+      }
+
+      if (!text) return errorApiResponse("Error fetching text");
+
+      return successApiResponse("Text successfully fetched", text);
     } catch (error) {
       log(error);
-      return null;
+      return errorApiResponse("Internal server error");
     }
   }
 
-  async findTextByUserId(userId: number): Promise<TextModel[] | null> {
+  async findTextByUserId(userId: number): Promise<ApiResponse> {
     try {
-      return await new TextRepo().findByUserId(userId);
+      const result = await new TextRepo().findByUserId(userId);
+      if (!result) return errorApiResponse("Not found");
+
+      return successApiResponse("Text successfully fetched", result);
     } catch (error) {
       log(error);
-      return null;
+      return errorApiResponse("Internal server error");
     }
   }
 

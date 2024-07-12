@@ -1,32 +1,41 @@
 import jwt from 'jsonwebtoken';
-import { AuthResponse } from "../Type/Response";
-import { UserAuthParams } from '../Type/Request';
+import { IncomingMessage } from 'http';
+import { UserModel } from '../Database/Model/UserModel';
 
 export class UserAuthProcessAction {
-    
- async authenticate(reqBody: UserAuthParams): Promise<AuthResponse> {
-  try {
-    const jwtSecret = process.env.JWT_SECRET;
+    buildPayload(user: UserModel): UserModel {
+      return { ...user };
+    };
 
-    if (!jwtSecret) {
-      throw new Error("JWT_SECRET variable is not defined");
-    }
+    getToken(payload: UserModel): string {
+      const tokenExpiresInSecond = 30 * 60; // 30 minutes
+      const token = jwt.sign(payload, this.getJwtSecret(), {
+        expiresIn: tokenExpiresInSecond,
+      });
+      return token;
+    };
 
-    const { email, password } = reqBody;
+    getLoggedInUserDetails (req: IncomingMessage): any {
+      const authorizationHeader = req.headers['authorization'];
+      if (!authorizationHeader) {
+        throw new Error("Authorization header missing");
+      }
+  
+      const token = authorizationHeader.split(' ')[1];
+      if (!token) {
+        throw new Error("Token missing");
+      }
+      const userDetails = jwt.verify(token, this.getJwtSecret());
+      return userDetails;
+    };
 
-    // In prod it will be handled by DB
-    if (email !== "test@gmail.com" || password !== "testPassword") {
-      return { success: false, errorCode: 401 };
-    }
-
-    const user = { email, password };
-    const token = jwt.sign(user, jwtSecret, { expiresIn: "1h" });
-
-    return { success: true, token };
-  } catch (error) {
-    console.error(error);
-    return { success: false, errorCode: 500 };
-  }
-};
+    getJwtSecret (): string {
+      const jwtSecret = process.env.JWT_SECRET;
+      if (!jwtSecret) {
+        throw new Error("JWT_SECRET variable is not defined");
+      }
+      return jwtSecret;
+    };
+  
 
 }

@@ -1,9 +1,12 @@
 import Controller from "./Controller";
 import { NextFunction, Request, Response } from "express";
-import { log } from "../Util/Helper";
+import { errorApiResponse, log } from "../Util/Helper";
 import { TextRegisterParams, UserIdParams } from "../Type/Request";
 import { BodyIdValidator, ParamIdValidator, TextValidator } from "../Validator/Validator";
 import { TextProcessAction } from "../Action/TextProcessAction";
+import { AuthMiddleware } from "../Middleware/AuthMiddleware";
+import { UserAuthProcessAction } from "../Action/UserAuthProcessAction";
+import { TextRepo } from "../Database/Repository/TextRepo";
 
 
 export default class TextController extends Controller {
@@ -14,9 +17,9 @@ export default class TextController extends Controller {
   ) {
     try {
       const { content } = req.body;
-      const userId = 1;
-      const isCreate = await new TextProcessAction().saveText(content, userId) // userid will manage from login
-      res.json(isCreate);
+      const loggedInUser = new UserAuthProcessAction().getLoggedInUserDetails(req); // loggedIn user details
+      const response = await new TextProcessAction().saveText(content, loggedInUser) 
+      res.json(response);
     } catch (error) {
       log(error);
       next(error);
@@ -31,9 +34,9 @@ export default class TextController extends Controller {
     try {
       const { id } = req.params;
       const { content } = req.body;
-      const userId = 1;
-      const isUpdate = await new TextProcessAction().updateText(id, content, userId);
-      res.json(isUpdate);
+      const loggedInUser = new UserAuthProcessAction().getLoggedInUserDetails(req);
+      const response = await new TextProcessAction().updateText(id, content, loggedInUser);
+      res.json(response);
     } catch (error) {
       log(error);
       next(error);
@@ -47,8 +50,9 @@ export default class TextController extends Controller {
   ) {
     try {
       const { id } = req.params;
-      const isDelete = await new TextProcessAction().deleteText(id);
-      res.json(isDelete);
+      const loggedInUser = new UserAuthProcessAction().getLoggedInUserDetails(req); 
+      const response = await new TextProcessAction().deleteText(id, loggedInUser);
+      res.json(response);
     } catch (error) {
       log(error);
       next(error);
@@ -61,8 +65,8 @@ export default class TextController extends Controller {
     next: NextFunction
   ) {
     try {
-      const texts = await new TextProcessAction().listOfText();
-      res.json(texts);
+      const response = await new TextProcessAction().listOfText();
+      res.json(response);
     } catch (error) {
       log(error);
       next(error);
@@ -76,8 +80,12 @@ export default class TextController extends Controller {
   ) {
     try {
       const { userId } = req.body;
-      const texts = await new TextProcessAction().findTextByUserId(userId);
-      res.json(texts);
+      const loggedInUser = new UserAuthProcessAction().getLoggedInUserDetails(req);
+      if(userId !== loggedInUser.id && loggedInUser.role !== 'admin'){
+        return res.json(errorApiResponse("You don't have access"));
+      }
+      const response = await new TextProcessAction().findTextByUserId(userId);
+      res.json(response);
     } catch (error) {
       log(error);
       next(error);
@@ -85,11 +93,13 @@ export default class TextController extends Controller {
   }
 
   register() {
+    this.router.use(AuthMiddleware);
     this.router.post("/create", [TextValidator], this.create.bind(this));
     this.router.post("/update/:id", [ParamIdValidator], [TextValidator], this.update.bind(this));
     this.router.get("/delete/:id", [ParamIdValidator], this.delete.bind(this));
     this.router.get("/list", this.list.bind(this));
     this.router.post("/userId", [BodyIdValidator], this.findByUserId.bind(this));
+
     return this.router;
   }
 }

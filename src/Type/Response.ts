@@ -3,3 +3,8 @@ export interface AuthResponse {
     token?: string;
     errorCode?: number;
   }
+
+  export interface ApiResponse {
+    message: string;
+    data?: any;
+  }
