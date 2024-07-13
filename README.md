@@ -15,7 +15,7 @@ This repository contains the implementation of a Text Analyzer Tool designed to 
   - [Unit Test](#unit-test)
   - [End-to-End Test](#end-to-end-test)
 - [Features](#features)
-- [Enhancements] (#enhancements)
+- [Enhancements](#enhancements)
 - [Performance Optimization](#performance-optimization)
 - [Deployment Recommendations](#deployment-recommendations)
 
