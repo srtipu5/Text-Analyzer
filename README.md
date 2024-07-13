@@ -49,7 +49,7 @@ JWT_SECRET=myjwtsecret
 
 ## Run Migrations
 
-Note: First migrate UserModel then TextModel
+Note: First migrate UserModel then TextModel.If you use my DB credentials then no need to make migration.
 ```
 npm run migrate
 ```
